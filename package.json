@@ -1,0 +1,13 @@
+{
+  "name": "deepscientist",
+  "version": "0.1.0",
+  "private": true,
+  "description": "DeepScientist Core skeleton",
+  "bin": {
+    "ds": "bin/ds.js"
+  },
+  "scripts": {
+    "ds": "node ./bin/ds.js",
+    "start": "node ./bin/ds.js daemon"
+  }
+}
