@@ -61,6 +61,57 @@ def test_config_normalization_strips_legacy_report_palette_block(temp_home: Path
     assert "reports" not in normalized
 
 
+def test_config_normalization_infers_user_locale_source_for_legacy_manual_override(temp_home: Path) -> None:
+    ensure_home_layout(temp_home)
+    manager = ConfigManager(temp_home)
+    manager.ensure_files()
+
+    normalized = manager._normalize_named_payload(
+        "config",
+        {
+            **manager.load_named("config"),
+            "default_locale": "en-US",
+            "bootstrap": {
+                "codex_ready": False,
+                "codex_last_checked_at": None,
+                "codex_last_result": {},
+            },
+        },
+    )
+
+    assert normalized["default_locale"] == "en-US"
+    assert normalized["bootstrap"]["locale_source"] == "user"
+    assert normalized["bootstrap"]["locale_initialized_from_browser"] is False
+
+
+def test_config_normalization_preserves_browser_locale_bootstrap_metadata(temp_home: Path) -> None:
+    ensure_home_layout(temp_home)
+    manager = ConfigManager(temp_home)
+    manager.ensure_files()
+
+    normalized = manager._normalize_named_payload(
+        "config",
+        {
+            **manager.load_named("config"),
+            "default_locale": "en-US",
+            "bootstrap": {
+                "codex_ready": False,
+                "codex_last_checked_at": None,
+                "codex_last_result": {},
+                "locale_source": "browser",
+                "locale_initialized_from_browser": True,
+                "locale_initialized_at": "2026-03-18T00:00:00+00:00",
+                "locale_initialized_browser_locale": "en-US",
+            },
+        },
+    )
+
+    assert normalized["bootstrap"]["locale_source"] == "browser"
+    assert normalized["bootstrap"]["locale_initialized_from_browser"] is True
+    assert normalized["bootstrap"]["locale_initialized_at"] == "2026-03-18T00:00:00+00:00"
+    assert normalized["bootstrap"]["locale_initialized_browser_locale"] == "en-US"
+
+
 def test_connectors_config_test_uses_system_probe(monkeypatch, temp_home: Path) -> None:
     ensure_home_layout(temp_home)
     manager = ConfigManager(temp_home)

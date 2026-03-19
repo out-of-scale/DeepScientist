@@ -277,6 +277,7 @@ export interface SystemUpdateStatus {
   last_checked_at?: string | null
   last_check_error?: string | null
   last_prompted_at?: string | null
+  last_prompted_version?: string | null
   last_deferred_at?: string | null
   last_skipped_version?: string | null
   last_update_started_at?: string | null

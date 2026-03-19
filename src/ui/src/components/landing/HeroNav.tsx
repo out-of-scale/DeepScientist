@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { BookOpen, Settings2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { SystemUpdateButton } from '@/components/system-update/SystemUpdateButton'
 import { BRAND_LOGO_SMALL_SRC } from '@/lib/constants/assets'
 import { cn } from '@/lib/utils'
 
@@ -38,6 +39,7 @@ export default function HeroNav() {
         </Link>
 
         <div className="flex items-center gap-2">
+          <SystemUpdateButton />
           <Button
             variant="outline"
             size="sm"

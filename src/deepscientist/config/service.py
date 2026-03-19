@@ -1321,6 +1321,7 @@ Use **Test** when the file exposes runtime dependencies.
         prepared = deepcopy(payload)
         if name == "config":
             prepared.pop("reports", None)
+            return self._normalize_config_payload(prepared)
         if name == "plugins":
             prepared = self._normalize_plugins_payload(prepared)
         elif name == "mcp_servers":
@@ -1366,6 +1367,36 @@ Use **Test** when the file exposes runtime dependencies.
                 normalized[connector_name] = base
             return normalized
         return self._deep_merge(defaults, prepared)
+
+    def _normalize_config_payload(self, payload: dict) -> dict:
+        defaults = default_payload("config", self.home)
+        normalized = self._deep_merge(defaults, payload)
+        bootstrap = normalized.get("bootstrap") if isinstance(normalized.get("bootstrap"), dict) else {}
+        raw_bootstrap = payload.get("bootstrap") if isinstance(payload.get("bootstrap"), dict) else {}
+        default_locale = str(defaults.get("default_locale") or "").strip()
+        current_locale = str(normalized.get("default_locale") or "").strip()
+        locale_source = str(raw_bootstrap.get("locale_source") or "").strip().lower()
+        locale_initialized_from_browser = bool(
+            raw_bootstrap.get("locale_initialized_from_browser", bootstrap.get("locale_initialized_from_browser", False))
+        )
+
+        if locale_source not in {"default", "browser", "user"}:
+            if current_locale and current_locale != default_locale:
+                locale_source = "user"
+            elif locale_initialized_from_browser:
+                locale_source = "browser"
+            else:
+                locale_source = "default"
+
+        if locale_source == "browser":
+            locale_initialized_from_browser = True
+
+        bootstrap["locale_source"] = locale_source
+        bootstrap["locale_initialized_from_browser"] = locale_initialized_from_browser
+        bootstrap["locale_initialized_at"] = bootstrap.get("locale_initialized_at")
+        bootstrap["locale_initialized_browser_locale"] = bootstrap.get("locale_initialized_browser_locale")
+        normalized["bootstrap"] = bootstrap
+        return normalized
 
     @staticmethod
     def _looks_like_legacy_codex_retry_profile(payload: dict) -> bool:

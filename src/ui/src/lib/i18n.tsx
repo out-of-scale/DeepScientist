@@ -1,5 +1,6 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 
+import { client } from '@/lib/api'
 import type { Locale } from '@/types'
 
 const messages = {
@@ -275,13 +276,79 @@ const I18nContext = createContext<I18nValue | null>(null)
 
 function resolveInitialLocale(): Locale {
   if (typeof navigator === 'undefined') {
-    return 'zh'
+    return 'en'
   }
   return navigator.language.toLowerCase().startsWith('zh') ? 'zh' : 'en'
 }
 
+function resolveBrowserConfigLocale(): 'zh-CN' | 'en-US' {
+  if (typeof navigator === 'undefined') {
+    return 'en-US'
+  }
+  return navigator.language.toLowerCase().startsWith('zh') ? 'zh-CN' : 'en-US'
+}
+
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [locale, setLocale] = useState<Locale>(resolveInitialLocale)
+  const bootstrapAttemptedRef = useRef(false)
+
+  useEffect(() => {
+    if (bootstrapAttemptedRef.current) {
+      return
+    }
+    bootstrapAttemptedRef.current = true
+
+    let cancelled = false
+
+    async function bootstrapRuntimeLocale() {
+      try {
+        const targetLocale = resolveBrowserConfigLocale()
+        const document = await client.configDocument('config')
+        if (cancelled) {
+          return
+        }
+        const structured =
+          document.meta?.structured_config && typeof document.meta.structured_config === 'object'
+            ? ({ ...(document.meta.structured_config as Record<string, unknown>) } as Record<string, unknown>)
+            : null
+        if (!structured) {
+          return
+        }
+        const bootstrap =
+          structured.bootstrap && typeof structured.bootstrap === 'object'
+            ? ({ ...(structured.bootstrap as Record<string, unknown>) } as Record<string, unknown>)
+            : {}
+        const localeSource = String(bootstrap.locale_source || '').trim().toLowerCase()
+        const browserInitialized = Boolean(bootstrap.locale_initialized_from_browser)
+        if (localeSource === 'user' || browserInitialized) {
+          return
+        }
+        const currentLocale = String(structured.default_locale || '').trim()
+        if (localeSource === 'default' || !currentLocale || currentLocale !== targetLocale) {
+          structured.default_locale = targetLocale
+        }
+        structured.bootstrap = {
+          ...bootstrap,
+          locale_source: 'browser',
+          locale_initialized_from_browser: true,
+          locale_initialized_at: new Date().toISOString(),
+          locale_initialized_browser_locale: targetLocale,
+        }
+        await client.saveConfig('config', {
+          structured,
+          revision: document.revision,
+        })
+      } catch {
+        // Locale bootstrap should never block the UI surface.
+      }
+    }
+
+    void bootstrapRuntimeLocale()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const value = useMemo<I18nValue>(
     () => ({

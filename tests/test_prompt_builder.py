@@ -427,6 +427,42 @@ def test_prompt_builder_mentions_record_main_experiment_protocol(temp_home: Path
     assert "artifact.record_main_experiment(...)" in prompt
     assert "RUN.md" in prompt
     assert "RESULT.json" in prompt
+    assert "whether primary performance improved / worsened / stayed mixed" in prompt
+    assert "never make the user infer performance improvement only from raw metrics" in prompt
+
+
+def test_prompt_builder_mentions_submit_idea_milestone_protocol(temp_home: Path) -> None:
+    builder, snapshot = _make_builder(temp_home)
+
+    prompt = builder.build(
+        quest_id=snapshot["quest_id"],
+        skill_id="idea",
+        user_message="Propose a new idea and explain whether it is actually worth pursuing.",
+        model="gpt-5.4",
+    )
+
+    assert "artifact.submit_idea" in prompt
+    assert "immediately after a successful accepted artifact.submit_idea(...)" in prompt
+    assert "whether it currently looks valid, research-worthy, and insight-bearing" in prompt
+
+
+def test_prompt_builder_mentions_idea_divergence_and_why_now_protocol(temp_home: Path) -> None:
+    builder, snapshot = _make_builder(temp_home)
+
+    prompt = builder.build(
+        quest_id=snapshot["quest_id"],
+        skill_id="idea",
+        user_message="Brainstorm several different research directions before selecting one.",
+        model="gpt-5.4",
+    )
+
+    assert "do not collapse onto the first plausible route" in prompt
+    assert "strong durable evidence already narrows the route" in prompt
+    assert "problem-first vs solution-first" in prompt
+    assert "serious frontier should usually shrink back to 2 to 3 candidates and at most 5" in prompt
+    assert "why now or what changed" in prompt
+    assert "two-sentence pitch" in prompt
+    assert "strongest-objection check" in prompt
 
 
 def test_prompt_builder_mentions_baseline_gate_protocol(temp_home: Path) -> None:
@@ -804,6 +840,14 @@ def test_prompt_builder_mentions_outline_first_paper_flow(temp_home: Path) -> No
     assert "resolution" in prompt
     assert "validation" in prompt
     assert "impact" in prompt
+    assert "make research value explicit early" in prompt
+    assert "problem and stakes -> concrete gap/bottleneck -> remedy/core idea -> evidence preview -> contributions" in prompt
+    assert "What / Why / So What" in prompt
+    assert "one cohesive contribution" in prompt
+    assert "five-part abstract formula" in prompt
+    assert "2 to 4 specific contribution bullets" in prompt
+    assert "title -> abstract -> introduction -> figures" in prompt
+    assert "if the first sentence could be pasted into many unrelated ML papers" in prompt
 
 
 def test_prompt_builder_mentions_outline_bound_analysis_campaign_contract(temp_home: Path) -> None:
@@ -823,6 +867,8 @@ def test_prompt_builder_mentions_outline_bound_analysis_campaign_contract(temp_h
     assert "do not launch it as a free-floating batch" in prompt
     assert "one-slice analysis campaign" in prompt
     assert "current workspace/result node" in prompt
+    assert "only launch slices that are actually executable with the current quest assets" in prompt
+    assert "user-provided assets" in prompt
 
 
 def test_prompt_builder_mentions_unified_supplementary_experiment_protocol_and_id_discipline(temp_home: Path) -> None:
@@ -845,6 +891,7 @@ def test_prompt_builder_mentions_unified_supplementary_experiment_protocol_and_i
     assert "Do not invent opaque ids" in prompt
     assert "campaign_id + slice_id" in prompt
     assert "`deviations` and `evidence_paths` are optional slice fields" in prompt
+    assert "record the slice with a non-success status" in prompt
 
 
 def test_prompt_builder_mentions_paperagent_like_outline_selection_rubric(temp_home: Path) -> None:
@@ -863,6 +910,28 @@ def test_prompt_builder_mentions_paperagent_like_outline_selection_rubric(temp_h
     assert "experiment ordering quality" in prompt
 
 
+def test_prompt_builder_mentions_verified_reference_breadth_protocol(temp_home: Path) -> None:
+    builder, snapshot = _make_builder(temp_home)
+
+    prompt = builder.build(
+        quest_id=snapshot["quest_id"],
+        skill_id="write",
+        user_message="Write the paper and verify the citations carefully.",
+        model="gpt-5.4",
+    )
+
+    assert "roughly 30 to 50 verified references" in prompt
+    assert "Every final citation must correspond to a real paper" in prompt
+    assert "paper/references.bib" in prompt
+    assert "Google Scholar" in prompt
+    assert "Semantic Scholar" in prompt
+    assert "SEARCH -> VERIFY -> RETRIEVE -> VALIDATE -> ADD" in prompt
+    assert "Google Scholar has no official API" in prompt
+    assert "Crossref" in prompt
+    assert "hand-write BibTeX" in prompt
+    assert "do one explicit reference audit" in prompt
+
+
 def test_prompt_builder_mentions_external_reasoning_and_paper_plan_contract(temp_home: Path) -> None:
     builder, snapshot = _make_builder(temp_home)
 
@@ -877,5 +946,10 @@ def test_prompt_builder_mentions_external_reasoning_and_paper_plan_contract(temp
     assert "current judgment or conclusion" in prompt
     assert "verification checklist or checks performed" in prompt
     assert "paper/writing_plan.md" in prompt
+    assert "paper/outline_selection.md" in prompt
+    assert "paper/related_work_map.md" in prompt
+    assert "paper/figure_storyboard.md" in prompt
+    assert "alternatives considered" in prompt
+    assert "next revision action" in prompt
     assert "experiment-to-section mapping" in prompt
     assert "figure/table-to-data-source mapping" in prompt

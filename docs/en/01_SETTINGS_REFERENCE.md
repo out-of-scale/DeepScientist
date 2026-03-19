@@ -44,7 +44,7 @@ Connector-specific setup guides:
 ```yaml
 home: ~/DeepScientist
 default_runner: codex
-default_locale: zh-CN
+default_locale: en-US # or zh-CN, initialized from the browser on first web launch
 daemon:
   session_restore_on_start: true
   max_concurrent_quests: 1
@@ -67,6 +67,14 @@ skills:
   sync_global_on_init: true
   sync_quest_on_create: true
   sync_quest_on_open: true
+bootstrap:
+  codex_ready: false
+  codex_last_checked_at: null
+  codex_last_result: {}
+  locale_source: browser
+  locale_initialized_from_browser: true
+  locale_initialized_at: 2026-03-18T00:00:00+00:00
+  locale_initialized_browser_locale: en-US
 connectors:
   auto_ack: true
   milestone_push: true
@@ -108,10 +116,11 @@ acp:
 **`default_locale`**
 
 - Type: `string`
-- Default: `zh-CN`
+- Default: initialized from the browser language on the first web launch, then persisted as `zh-CN` or `en-US`
 - Allowed values: `zh-CN`, `en-US`
 - UI label: `Default locale`
-- Meaning: default prompt and UI language preference.
+- Meaning: default language preference used by prompts and runtime copy.
+- Notes: after the first browser-driven initialization, changing this field in `Settings` makes it a manual override and DeepScientist will not auto-follow the browser again.
 
 ### Daemon policy
 
@@ -1074,7 +1083,7 @@ servers:
 ```yaml
 # config.yaml
 default_runner: codex
-default_locale: zh-CN
+default_locale: en-US
 ui:
   host: 0.0.0.0
   port: 20999

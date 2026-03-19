@@ -103,10 +103,16 @@ Before launching a campaign, confirm:
 - the comparison target
 - the metric or observable of interest
 - the list of specific analysis questions
+- the current quest / user-provided assets that each planned slice will actually use
+- whether each slice is executable with the current assets, tooling, and available credentials
 - if durable state exposes `active_baseline_metric_contract_json`, read that JSON file before defining slice success criteria or comparison tables
 - treat `active_baseline_metric_contract_json` as the default baseline comparison contract unless a slice is explicitly testing a different evaluation contract
 
 If the question list is fuzzy, sharpen it before running anything.
+Treat quest files, attached user assets, checkpoints, configs, extracted texts, baselines, and existing code paths as the first-choice asset pool.
+Do not design slices around hypothetical resources that the current system cannot actually access or run.
+If a slice cannot be executed with the current system, redesign it around available assets or explicitly report that the task cannot currently be completed.
+If infeasibility appears mid-run, attempt bounded recovery first; if still blocked, record the slice with a non-success status and explain why.
 
 ## Truth sources
 
@@ -289,11 +295,13 @@ Create the campaign with `artifact.create_analysis_campaign(...)` before startin
 Even one extra experiment should still be represented as a one-slice campaign so Git and Canvas show a real child node.
 Branch that campaign from the current workspace/result node rather than mutating the completed parent node in place.
 That tool should receive the full slice list, and each returned slice worktree becomes the required execution location for that slice.
+Only create the campaign after you have verified that the listed slices are actually executable with the current quest assets and runtime.
 When the campaign is writing-facing, the same call should also carry `selected_outline_ref`, `research_questions`, `experimental_designs`, and `todo_items`.
 If ids or refs are unclear, recover them first with `artifact.resolve_runtime_refs(...)`, `artifact.get_analysis_campaign(...)`, or `artifact.list_paper_outlines(...)` instead of guessing.
 Treat `campaign_id` as system-owned, and treat `slice_id` / `todo_id` as agent-authored semantic ids.
 Do not replace the normal campaign flow with repeated manual `artifact.prepare_branch(...)` calls.
 After each slice finishes, call `artifact.record_analysis_slice(...)` immediately so the result is mirrored back to the parent branch and the next slice can be activated.
+If a slice fails or becomes infeasible, still call `artifact.record_analysis_slice(...)` with an honest non-success status plus the real blocker and next recommendation; do not leave the campaign state ambiguous.
 For slice recording, `deviations` and `evidence_paths` are optional context fields, not mandatory ceremony; include them only when they materially help explanation or auditability.
 Each `artifact.record_analysis_slice(...)` call should also include an `evaluation_summary` with exactly these six fields:
 

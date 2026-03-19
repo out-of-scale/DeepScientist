@@ -411,3 +411,22 @@ def test_local_quest_canvas_uses_single_lab_refresh_entrypoint() -> None:
     assert "onRefresh={onRefresh}" in lab_surface_source
     assert "onRefresh?: () => Promise<void> | void" in lab_canvas_source
     assert "void Promise.resolve(onRefresh?.())" in lab_canvas_source
+
+
+def test_update_reminders_show_manual_npm_command_in_web_surface() -> None:
+    reminder_source = _read("src/ui/src/components/landing/UpdateReminderDialog.tsx")
+    app_bar_source = _read("src/ui/src/components/projects/ProjectsAppBar.tsx")
+    hero_nav_source = _read("src/ui/src/components/landing/HeroNav.tsx")
+    update_button_source = _read("src/ui/src/components/system-update/SystemUpdateButton.tsx")
+    dialog_source = _read("src/ui/src/components/system-update/SystemUpdateDialog.tsx")
+
+    assert "manual_update_command" in dialog_source
+    assert "systemUpdateAction('remind_later')" in reminder_source
+    assert "SystemUpdateDialog" in reminder_source
+    assert "prompt_recommended" in reminder_source
+    assert "npm install -g @researai/deepscientist@latest" in dialog_source
+    assert "Sparkles" in update_button_source
+    assert "SystemUpdateButton" in app_bar_source
+    assert "SystemUpdateButton" in hero_nav_source
+    assert "install_latest" not in reminder_source
+    assert "updateNow" not in reminder_source

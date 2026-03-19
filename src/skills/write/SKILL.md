@@ -175,6 +175,23 @@ Treat `paper/draft.md` or the equivalent working note as the running evidence le
 After every significant search, plot, paragraph, revision pass, or claim downgrade, update the working note and writing plan immediately so important writing state is not trapped in transient chat output.
 For any substantial paper-writing line, keep `paper/writing_plan.md` or an equivalent durable plan detailed enough that another agent could resume from it without reconstructing the full logic from chat alone.
 
+Also externalize the major writing reasoning into durable notes instead of leaving it only in transient chat.
+At minimum, keep these up to date when they are relevant:
+
+- `paper/outline_selection.md`
+- `paper/claim_evidence_map.json`
+- `paper/related_work_map.md`
+- `paper/figure_storyboard.md`
+- `paper/reviewer_first_pass.md`
+
+Prefer the same compact reasoning-note shape for those files when possible:
+
+- current judgment
+- alternatives considered
+- evidence used
+- risks or uncertainty
+- next revision action
+
 Also keep a compact authenticity checklist visible throughout the writing line.
 At minimum, repeatedly verify:
 
@@ -215,6 +232,7 @@ Do not rush into polished prose before evidence assembly, figure planning, and c
 If writing uncovers missing information, it is acceptable to return to focused literature search or artifact reading, but persist the findings immediately before resuming drafting.
 Use web search to discover missing papers or references, and use `artifact.arxiv(paper_id=..., full_text=False)` when you need to actually read an arXiv paper rather than just locate it.
 Only set `full_text=True` when the shorter view is insufficient for the needed detail.
+Before treating related work coverage as adequate, run broad literature discovery and reading passes; for a normal paper-like deliverable, aim for roughly `30` to `50` verified references unless the scope clearly justifies fewer.
 
 For substantial paper-like writing, the durable writing plan should usually include:
 
@@ -329,6 +347,44 @@ A strong outline often benefits from a five-part story arc:
 - validation
 - impact
 
+Keep the narrative discipline explicit:
+
+- the paper should center on one cohesive contribution or claim cluster rather than a random bag of experiments
+- force the outline and early draft to answer:
+  - `What`: what exactly is claimed
+  - `Why`: what evidence supports it
+  - `So What`: why the reader or community should care
+- if you cannot state the paper's contribution in one sentence, keep refining the outline instead of drafting around the confusion
+- front-load the paper's value in the title, abstract, introduction opening, and first decisive figure or table
+- delete side branches that do not strengthen the main contribution
+
+Useful near-source craft heuristics from strong ML writing guidance:
+
+- time allocation suggestion:
+  - expect to spend roughly comparable effort on the abstract, the introduction, the figures, and then everything else combined
+  - reviewers often judge from `title -> abstract -> introduction -> figures` before reading methods carefully
+- reviewer-attention suggestion:
+  - do not bury the contribution after long background
+  - assume many readers may inspect Figure 1 before they read the technical core
+
+Recommended writing-guide style suggestions for this stage:
+
+- title suggestion:
+  - prefer a concrete title that names task / mechanism / setting rather than a slogan
+  - avoid broad hype words unless the evidence really supports them
+- abstract suggestion:
+  - let each sentence do one job; avoid repeating background across multiple sentences
+  - end on the strongest supported result and its boundary, not on generic optimism
+- related-work suggestion:
+  - organize by comparison axis or problem family, not by citation dump order
+  - make the nearest-neighbor distinction explicit in each paragraph
+- paragraph suggestion:
+  - prefer `topic sentence -> evidence/detail -> implication -> bridge`
+  - if a paragraph has no evidence-bearing role, trim or delete it
+- terminology suggestion:
+  - keep naming stable across title, abstract, introduction, figures, and method
+  - do not rename the same component repeatedly for style variation
+
 When useful, reverse-engineer the story explicitly as:
 
 - task
@@ -378,6 +434,8 @@ Outline-construction rules:
 - verify that each planned figure or table has real source data before promising it in the outline
 - keep method descriptions faithful to the actual implementation and accepted diffs; do not invent idealized components just because they improve the story
 - keep the method as the protagonist of the outline while using baselines mainly for factual comparison and context
+- make research value explicit in the outline itself: say why the problem matters, what concrete gap remains, and why the intervention is worth reader attention beyond surface novelty
+- do not assume significance is obvious; make the practical, empirical, or methodological payoff legible in the title / abstract / introduction plan
 
 If the deliverable is a paper or paper-like report, pressure-test the outline against a compact question set before drafting:
 
@@ -466,14 +524,32 @@ Paper-oriented drafting defaults:
   - make it a one-line statement of the work rather than a vague slogan
   - preserve search keywords for the task, mechanism, or setting when possible
 - abstract:
+  - front-load the paper's value rather than generic field background
+  - prefer a five-part formula:
+    - what you achieved
+    - why it is hard and important
+    - how you do it
+    - what evidence you have
+    - the most important result
   - prefer the four-slot contract:
     - problem
     - what we do
     - how at a high level
     - main result or strongest evidence
   - avoid formula-heavy or jargon-heavy abstracts
+  - if the first sentence could be pasted into many unrelated ML papers, rewrite it until it names the actual contribution
 - introduction:
   - motivate the concrete problem, not a generic field slogan
+  - make the research value legible to an outside reader early rather than assuming they will infer it
+  - follow a standard introduction contract: `problem and stakes -> concrete gap/bottleneck -> remedy / core idea -> evidence preview -> contributions`
+  - keep it concise and high-density; for a normal paper-style draft, aim for roughly `1` to `1.5` pages and include `2` to `4` specific contribution bullets
+  - a reliable structure is:
+    - opening hook: `2` to `3` sentences on the problem and why it matters now
+    - background / challenge paragraph
+    - approach paragraph
+    - contribution bullets
+    - results preview
+    - optional brief paper organization
   - prefer `problem -> why it matters -> current bottleneck -> our remedy -> evidence preview`
   - state contributions only at the strength actually achieved
   - do not waste space on “This paper is organized as follows”; directly state contributions or evidence-bearing section roles instead
@@ -483,6 +559,7 @@ Paper-oriented drafting defaults:
   - explain distinction, not just similarity
   - do not attack prior work merely to make the current line look more novel
   - show field lineage and mechanism-level comparison when possible
+  - organize by method family, bottleneck, or comparison axis rather than by one-paper-at-a-time summary
 - method:
   - begin with the baseline or essential background when that lowers reader burden
   - when possible, use a running example
@@ -497,12 +574,43 @@ Paper-oriented drafting defaults:
   - state what the method does not show
   - do not let future work secretly carry unsupported present-tense claims
 
+Sentence- and paragraph-level clarity suggestions:
+
+- keep subject and verb close; long interruptions weaken readability
+- put familiar context early and new or important information late
+- let each sentence and each paragraph do one main job
+- prefer explicit verbs over nominalized constructions
+- minimize vague pronouns; when needed, attach them to a noun such as `this result` or `this modification`
+- prefer active voice when the actor matters
+- keep paragraph structure readable:
+  - first sentence states the point
+  - middle sentences supply evidence or mechanism
+  - last sentence reinforces the implication or bridges forward
+- if a sentence or paragraph does not add new information, cut it
+
+Word-choice suggestions:
+
+- prefer precise quantitative terms over vague descriptors
+- avoid filler intensifiers such as `very`, `really`, `basically`, or `essentially`
+- hedge only when genuine uncertainty exists
+- keep terminology stable across title, abstract, introduction, figures, and method
+- avoid framing the work as merely `combining`, `modifying`, or `extending` prior work unless that is honestly the best description
+
 After the experiments section stabilizes, revisit the introduction and contribution framing.
 If the experimental outcome changed the real story, rewrite the introduction so that motivation, claimed contributions, and significance match the actual results rather than the earlier hope.
 
 ### Phase 5. Citation integrity
 
 Never generate references from memory.
+A thin bibliography created from convenience searches is not acceptable.
+For a normal paper-like deliverable, the default target is roughly `30` to `50` verified references unless the scope clearly justifies fewer.
+Every final citation must correspond to a real paper you verified from an actual source; do not cite from memory, model recall, or unverified secondary summaries.
+Use one consistent citation workflow: `SEARCH -> VERIFY -> RETRIEVE -> VALIDATE -> ADD`.
+For discovery, use Semantic Scholar by default or Google Scholar through normal manual search / export only.
+Google Scholar has no official API, so do not treat Scholar scraping as a normal automated backend.
+Use Crossref / DOI, arXiv, OpenAlex, and publisher metadata as verification or metadata backfill sources around that same workflow.
+Store actual bibliography entries in `paper/references.bib` as valid BibTeX copied or exported from Google Scholar, Semantic Scholar-linked metadata, DOI/Crossref, publisher pages, or another legitimate metadata source.
+Do not hand-write BibTeX entries from scratch.
 
 For each important citation:
 
@@ -510,11 +618,44 @@ For each important citation:
 2. verify the citation exists in at least two compatible ways when feasible
 3. prefer DOI-based BibTeX retrieval when DOI exists
 4. confirm the cited claim actually appears in the source
-5. record the citation immediately in the draft or references store
+5. record the citation note immediately in the draft or writing notes, and place the actual BibTeX entry in `paper/references.bib`
 6. if verification fails, keep an explicit placeholder and mark it unresolved
 
 Do not hide citation uncertainty.
 Do not leave search findings only in transient chat state; persist them in the working draft or writing notes immediately.
+If you must touch a BibTeX entry manually, limit it to mechanical cleanup of an already exported entry rather than authoring the citation metadata yourself.
+Before `artifact.submit_paper_bundle(...)`, do one explicit reference audit for count, existence, and claim-level spot checks.
+If verification remains incomplete, do not present the draft or bundle as final.
+
+### Citation resources
+
+Use these as the normal citation-resource stack for the workflow above:
+
+- discovery:
+  - Semantic Scholar API / UI
+  - Google Scholar UI search + manual BibTeX export
+- metadata and BibTeX retrieval:
+  - DOI / Crossref content negotiation
+  - publisher metadata pages
+- verification backstops:
+  - arXiv API / arXiv paper page
+  - OpenAlex
+  - publisher landing pages
+- Python libraries when scripting is justified:
+  - `semanticscholar`
+  - `arxiv`
+  - `habanero` for Crossref
+- optional manual QA tools:
+  - Citely
+  - ReciteWorks
+
+Practical role split:
+
+- Semantic Scholar: default programmatic discovery for ML / AI literature
+- Google Scholar: broad manual discovery and manual BibTeX export when needed
+- Crossref / DOI: preferred BibTeX retrieval path when DOI exists
+- arXiv: preprint verification and content access
+- OpenAlex: open metadata backfill when other sources are incomplete
 
 ### Phase 6. Figures and tables
 
@@ -540,6 +681,10 @@ When generating visuals:
 - ensure captions and surrounding text match the actual figure contents exactly
 - make captions self-contained enough that the reader can understand the main message without hunting through the body text
 - if any synthetic or illustrative data is used for explanation, disclose that fact clearly and avoid mixing it with claimed empirical evidence
+- treat Figure 1 as critical: it often carries the first technical impression
+- prefer vector graphics for plots when possible
+- keep figures readable in grayscale or color-vision-deficiency settings
+- do not put the title inside the figure when the caption can serve that role
 
 Each figure or table should be traceable to source artifacts.
 
@@ -561,6 +706,11 @@ For each key claim, record:
 - evidence paths
 - support status: supported, partial, unsupported
 - caveats
+
+Also keep the related-work and figure reasoning explicit:
+
+- in `paper/related_work_map.md`, record the closest competing methods, the comparison axes, and the exact claimed distinction
+- in `paper/figure_storyboard.md`, record what question each figure/table answers, why it belongs in the main text or appendix, and the intended caption takeaway
 
 Then run a harsh self-review:
 

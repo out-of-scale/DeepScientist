@@ -2836,6 +2836,13 @@ export function QuestWorkspaceSurfaceInner({
     }
   }, [questId, updateView])
 
+  const onOpenStageSelection = React.useCallback(
+    (selection: QuestStageSelection) => {
+      updateView('stage', selection)
+    },
+    [updateView]
+  )
+
   if (
     (loading || detailsLoading) &&
     !workflow &&
@@ -2856,13 +2863,6 @@ export function QuestWorkspaceSurfaceInner({
       </div>
     )
   }
-
-  const onOpenStageSelection = React.useCallback(
-    (selection: QuestStageSelection) => {
-      updateView('stage', selection)
-    },
-    [updateView]
-  )
 
   return (
     <div className="panel center-panel morandi-glow ds-stage" style={{ flex: 1 }}>

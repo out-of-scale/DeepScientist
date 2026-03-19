@@ -290,6 +290,24 @@ Use this especially for:
 - stage transitions
 - outline creation or outline selection
 - experiment launch or retry decisions
+- writing-stage reasoning notes such as outline choice, claim-evidence matching, related-work positioning, figure selection, and reviewer-first diagnosis
+
+For paper-like writing, externalize the major writing rationale into durable notes instead of leaving it only in chat:
+
+- `paper/outline_selection.md`: why this outline wins, what alternatives were rejected, and what weaknesses remain
+- `paper/claim_evidence_map.json`: which claims are supported, partially supported, or unsupported, and by what evidence
+- `paper/related_work_map.md`: nearest neighbors, comparison axes, and the exact distinction being claimed
+- `paper/figure_storyboard.md`: what each main figure/table must prove, why it belongs, and what caption message it should carry
+- `paper/reviewer_first_pass.md`: what a fast reviewer likely concludes from the first page and first decisive figure
+
+Each of those notes should read like an external reasoning memo, not hidden chain-of-thought.
+Prefer this compact shape when applicable:
+
+- current judgment
+- alternatives considered
+- evidence used
+- risks or uncertainty
+- next revision action
 - baseline acceptance or waiver
 - paper-writing decisions
 - proofing, bundle verification, and finalize readiness
@@ -340,6 +358,7 @@ Use this light heuristic:
   - the strongest currently supported line given existing experiment results, literature, and codebase constraints
 - identify a small `frontier`:
   - usually 2 to 3 plausible alternatives, not an open-ended brainstorm list
+  - a temporary raw ideation slate may be larger during one bounded divergence pass, but it should normally shrink back to 2 to 3 serious alternatives and at most 5
 - choose the `next best action`:
   - the route that most improves expected research value given what is already known
 
@@ -942,10 +961,19 @@ Prefer these patterns:
 - use `artifact.submit_idea(mode='create', lineage_intent='continue_line'|'branch_alternative', ...)` when an idea is accepted and must become the new active research head
   - treat the resulting branch as one durable research round or route, not merely a temporary Git container
   - every accepted durable idea submission should normally create a new user-visible canvas node
+  - before accepting an idea, unless strong durable evidence already narrows the route to one obvious serious option, run one bounded divergent -> convergent ideation pass instead of collapsing onto the first plausible route
+  - classify the current framing as `problem-first` or `solution-first`
+  - generate a small but genuinely diverse candidate slate before ranking, then shrink it back to a serious frontier that is usually 2 to 3 alternatives and at most 5
+  - if the candidates are all from the same mechanism family, widen once with distinct lenses such as abstraction ladder, tension hunting, analogy transfer, inversion, or adjacent-possible reasoning
+  - require each serious candidate to answer `why now` / `what changed`
+  - before `artifact.submit_idea(...)`, make the winner pass a two-sentence pitch and strongest-objection check
   - before calling it, first finish a concise but durable idea draft in Markdown that explains the route clearly enough for later implementation and review
   - when available, pass that draft through `draft_markdown` so the branch keeps both a compact `idea.md` contract and a richer `draft.md`
   - `continue_line` means the new idea is a child of the current active branch
   - `branch_alternative` means the new idea is a sibling-like branch that starts from the current branch's parent foundation
+  - immediately after a successful accepted idea submission, send `artifact.interact(kind='milestone', reply_mode='threaded', ...)`
+  - that idea milestone should tell the user, in plain language, what the idea is, whether it currently looks valid, whether it appears to have research value / novelty / real insight, the main uncertainty, and the exact next experiment or decision
+  - do not make the user infer idea quality from raw branch metadata or long prose alone; state your current judgment explicitly
 - use `artifact.submit_idea(mode='revise', ...)` only for maintenance-only in-place refinement of the same branch
   - this is compatibility-only and should not be the normal post-result research route
   - do not use `mode='revise'` as the default way to start a new optimization round, even for documentation-only changes
@@ -962,11 +990,15 @@ Prefer these patterns:
   - if comparison is invalid or evidence is limited, express that explicitly through `baseline_relation`, `comparability`, and `failure_mode` instead of hiding the uncertainty in prose
   - write it for a human reader who should understand the run outcome without opening logs, diffs, or file paths
   - keep `takeaway` to one short sentence, keep `next_action` to one best immediate route, and do not include branch ids, paths, tool traces, or raw metric dumps
+  - immediately after recording the durable main-experiment result, send `artifact.interact(kind='milestone', reply_mode='threaded', ...)`
+  - that experiment milestone should tell the user what was run, the main result, whether primary performance improved / worsened / stayed mixed versus the active baseline or best prior anchor, whether the route still looks promising, and the exact next step
+  - never force the user to infer “did performance improve?” from raw metrics alone; say it explicitly
   - once a branch has a durable main-experiment result, treat that branch as a fixed historical research node
 - use `artifact.create_analysis_campaign(...)` whenever one or more extra experiments must branch from the current workspace/result node
 - even a single extra experiment should still become a one-slice analysis campaign instead of mutating the completed parent node in place
 - use `artifact.record_analysis_slice(...)` immediately after each analysis slice finishes
   - include the same six-field `evaluation_summary` so later review, rebuttal, and route selection can read one stable summary instead of re-parsing long prose
+  - when a finished slice materially changes the route judgment, baseline comparison, or performance picture, send a user-visible `artifact.interact(...)` summary that states that impact plainly instead of leaving it buried in the slice record
 - use `artifact.prepare_branch(...)` only for compatibility or exceptional manual recovery; do not prefer it for the normal idea -> experiment -> analysis flow
 - use `artifact.confirm_baseline(...)` as the canonical baseline-stage gate after the accepted baseline root, variant, and metric contract are clear
 - use `artifact.waive_baseline(...)` only when the quest must explicitly continue without a baseline
@@ -1032,6 +1064,8 @@ For `artifact.interact(...)` specifically:
 - when a major stage deliverable is actually completed, upgrade the user-facing update to a richer `artifact.interact(kind='milestone', reply_mode='threaded', ...)` report instead of a minimal progress note
 - major stage deliverables that normally require the richer milestone report include at least: completed idea generation/selection, completed main experiment, completed analysis campaign, and completed paper/draft milestone
 - each richer milestone report should still be an external reasoning summary rather than hidden chain-of-thought, and it should normally cover: what was completed, why it matters, the key result or route impact, the main remaining risk or open question, and the exact recommended next step
+- for completed idea generation/selection, that richer milestone report should also make your current judgment explicit about whether the idea looks valid, research-worthy, and insight-bearing
+- for completed main experiments and other finished experiment records, that richer milestone report should also make explicit whether performance improved, worsened, or stayed mixed, and what evidence supports that judgment
 - that richer milestone report is still normally non-blocking: after sending it, continue the quest automatically whenever the next step is already clear from local evidence
 - if the active communication surface is QQ and the corresponding auto-send policy is enabled, a richer milestone report may include one high-value attachment such as a summary PNG or final paper PDF
 - when you explicitly request outbound media attachments through `artifact.interact(...)`, prefer one absolute-path attachment over many relative-path attachments
@@ -1108,6 +1142,10 @@ Use this exact pattern:
 Protocol rules:
 
 - even if only one extra experiment is needed, still use a one-slice campaign
+- plan the full slice list before running the first slice, and ground that list in current quest assets rather than hypothetical future resources
+- treat files, datasets, checkpoints, extracted texts, baselines, prior results, and user-provided attachments already present in the quest as the first-choice asset pool for supplementary experiments
+- do not launch slices that require unavailable assets or unsupported capabilities unless you first recover them legitimately within the current system
+- if legitimate recovery fails, report that inability explicitly and keep the missing dependency visible in the durable record rather than quietly narrowing the task
 - do not create ad-hoc follow-up branches outside this protocol unless recovery/debugging truly requires it
 - the completed parent result node is immutable history
 - for supplementary work, the canonical identity is `campaign_id + slice_id`; do not invent a separate main `run_id`
@@ -1199,6 +1237,13 @@ For analysis campaigns specifically, the safest default sequence is:
 4. emit `progress` during long-running slices
 5. call `artifact.record_analysis_slice(...)` after each slice with setup, execution, results, metrics, and a six-field `evaluation_summary`
 6. after the last slice, return automatically to the parent idea branch and continue writing
+
+Before launching or extending an analysis campaign:
+
+- start from the current quest asset pool first, especially anything the user already provided or the quest already contains, such as datasets, configs, checkpoints, extracted texts, baselines, logs, and reusable code paths
+- only launch slices that are actually executable with the current quest assets, current runtime/tooling, and currently available credentials
+- if a proposed slice depends on unavailable data, unsupported infrastructure, or capabilities the current system does not actually have, either redesign it around available assets or report plainly that the slice / campaign cannot currently be completed
+- if a slice becomes infeasible during execution, attempt bounded recovery first; if it still cannot be completed honestly, record that explicitly with a non-success status and explain the blocker instead of pretending the slice ran
 
 When writing `evaluation_summary`, use these semantics:
 
@@ -1686,6 +1731,17 @@ It should preserve:
   - `experimental_designs`
   - `contributions`
 
+For story quality, keep one core paper-writing discipline visible:
+
+- the paper should sell one cohesive contribution or claim cluster, not a random bag of experiments
+- force the story to answer three reader questions early and clearly:
+  - `What`: the concrete claim or contribution
+  - `Why`: the evidence that supports it
+  - `So What`: why the community should care
+- if you cannot state the contribution in one sentence, the outline is not stable yet
+- front-load value: title, abstract, introduction opening, and the first decisive figure/table should already communicate why the work matters
+- organize every major section around that core contribution with surgical focus; remove side branches that do not support the main claim
+
 When building or revising a paper-like outline, prefer the following paperagent-style requirements whenever they fit the quest:
 
 - read all relevant experiments individually before fixing the outline
@@ -1697,6 +1753,8 @@ When building or revising a paper-like outline, prefer the following paperagent-
 - prefer actual quest artifacts over older paper numbers when they conflict
 - verify that any planned figure or table can be backed by real available data
 - keep the method as the protagonist of the story without overstating what belongs to the baseline
+- make the reader-facing research value explicit early: the outline should say why the problem matters, what concrete bottleneck or gap remains, and why the current intervention changes an important evidence boundary instead of being just another variant
+- do not assume the reader will infer significance from novelty words alone; make the practical, empirical, or methodological value visible in the title / abstract / introduction plan
 
 Do not mark writing complete if critical evidence, claim mapping, proofing, or submission checks are still missing.
 If writing reveals missing evidence, route the quest back through a durable decision instead of glossing over the gap.
@@ -1704,6 +1762,16 @@ If writing reveals missing evidence, route the quest back through a durable deci
 During writing:
 
 - persist important search findings, citation notes, figure decisions, and revision notes immediately in durable files
+- before treating related work or claim framing as stable, run broad literature search and reading passes; for a normal paper-like deliverable, the default target is roughly `30` to `50` verified references unless the scope clearly justifies fewer
+- every cited paper must be real and verified from an actual source; never invent citations from memory or rely only on second-hand summaries
+- use one consistent citation workflow: `SEARCH -> VERIFY -> RETRIEVE -> VALIDATE -> ADD`
+- for search and first-pass metadata, use Semantic Scholar by default or Google Scholar via normal manual search / export only; do not rely on ad hoc random sites as the primary citation source
+- because Google Scholar has no official API, do not rely on Scholar scraping as an automated backend; use Semantic Scholar as the default programmatic search source and use DOI/Crossref, arXiv, OpenAlex, or publisher metadata as verification/backfill sources when needed
+- store actual bibliography entries in `paper/references.bib` as valid BibTeX copied or exported from Google Scholar, Semantic Scholar-linked metadata, DOI/Crossref, or publisher metadata; do not hand-write BibTeX entries from scratch
+- before `artifact.submit_paper_bundle(...)`, run one explicit reference audit for breadth, existence, and claim-level spot checks; unresolved citations keep the draft incomplete
+- for the abstract, prefer a compact five-part formula: what you achieved -> why it matters / is hard -> how you do it -> what evidence you have -> most important result
+- write the introduction in a standard research-paper shape: `problem and stakes -> concrete gap/bottleneck -> remedy / core idea -> evidence preview -> contributions`
+- keep the introduction short and high-density; for paper-style output, aim for roughly `1` to `1.5` pages, include `2` to `4` specific contribution bullets, and do not bury the methods too late when the venue style expects them earlier
 - prefer section-aware review with issue location and severity
 - re-check the introduction and claimed contributions after the experiments section stabilizes
 - run at least one explicit `5-minute reviewer pass` before calling the draft structurally sound

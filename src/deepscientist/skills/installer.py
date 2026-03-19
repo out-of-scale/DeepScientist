@@ -5,7 +5,7 @@ from pathlib import Path
 from uuid import uuid4
 
 from ..memory.frontmatter import load_markdown_document
-from ..shared import ensure_dir
+from ..shared import ensure_dir, read_json, utc_now, write_json
 from .registry import discover_skill_bundles
 
 
@@ -62,6 +62,72 @@ class SkillInstaller:
             "claude": copied_claude,
             "notes": [],
         }
+
+    def sync_existing_quests(self) -> dict:
+        quests_root = self.home / "quests"
+        synced: list[dict[str, object]] = []
+        if not quests_root.exists():
+            return {
+                "count": 0,
+                "quests": [],
+            }
+        for quest_root in sorted(quests_root.iterdir()):
+            if not quest_root.is_dir():
+                continue
+            if not (quest_root / "quest.yaml").exists():
+                continue
+            result = self.sync_quest(quest_root)
+            synced.append(
+                {
+                    "quest_id": quest_root.name,
+                    "quest_root": str(quest_root),
+                    "codex_count": len(result.get("codex") or []),
+                    "claude_count": len(result.get("claude") or []),
+                }
+            )
+        return {
+            "count": len(synced),
+            "quests": synced,
+        }
+
+    def ensure_release_sync(
+        self,
+        *,
+        installed_version: str,
+        sync_global_enabled: bool = True,
+        sync_existing_quests_enabled: bool = True,
+        force: bool = False,
+    ) -> dict:
+        normalized_version = str(installed_version or "").strip() or "unknown"
+        state = self._read_release_sync_state()
+        previous_version = str(state.get("installed_version") or "").strip()
+        if not force and previous_version == normalized_version:
+            return {
+                "updated": False,
+                "installed_version": normalized_version,
+                "previous_version": previous_version or None,
+                "global_synced": False,
+                "existing_quests_synced": False,
+                "state_path": str(self._release_sync_state_path()),
+            }
+
+        summary: dict[str, object] = {
+            "updated": True,
+            "installed_version": normalized_version,
+            "previous_version": previous_version or None,
+            "global_synced": False,
+            "existing_quests_synced": False,
+            "state_path": str(self._release_sync_state_path()),
+            "synced_at": utc_now(),
+        }
+        if sync_global_enabled:
+            summary["global"] = self.sync_global()
+            summary["global_synced"] = True
+        if sync_existing_quests_enabled:
+            summary["existing_quests"] = self.sync_existing_quests()
+            summary["existing_quests_synced"] = True
+        self._write_release_sync_state(summary)
+        return summary
 
     def _sync_claude_projection(self, bundle, target_root: Path) -> Path:
         target = target_root / f"deepscientist-{bundle.skill_id}.md"
@@ -130,3 +196,13 @@ class SkillInstaller:
                 shutil.rmtree(target)
             else:
                 target.unlink(missing_ok=True)
+
+    def _release_sync_state_path(self) -> Path:
+        return self.home / "runtime" / "skill-sync-state.json"
+
+    def _read_release_sync_state(self) -> dict:
+        payload = read_json(self._release_sync_state_path(), {})
+        return payload if isinstance(payload, dict) else {}
+
+    def _write_release_sync_state(self, payload: dict[str, object]) -> None:
+        write_json(self._release_sync_state_path(), payload)

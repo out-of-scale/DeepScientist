@@ -35,9 +35,8 @@ const pythonCommands = new Set([
 ]);
 const UPDATE_PACKAGE_NAME = String(packageJson.name || '@researai/deepscientist').trim() || '@researai/deepscientist';
 const UPDATE_CHECK_TTL_MS = 12 * 60 * 60 * 1000;
-const UPDATE_PROMPT_TTL_MS = 12 * 60 * 60 * 1000;
 
-const optionsWithValues = new Set(['--home', '--host', '--port', '--quest-id', '--mode']);
+const optionsWithValues = new Set(['--home', '--host', '--port', '--quest-id', '--mode', '--proxy']);
 
 function printLauncherHelp() {
   console.log(`DeepScientist launcher
@@ -53,6 +52,7 @@ Usage:
   ds --tui
   ds --both
   ds --host 0.0.0.0 --port 21000
+  ds --host 0.0.0.0 --port 21000 --proxy http://127.0.0.1:58887
   ds --stop
   ds --restart
   ds --status
@@ -72,6 +72,7 @@ Launcher flags:
   --restart             Restart the managed daemon
   --home <path>         Use a custom DeepScientist home
   --here                Use the current working directory as DeepScientist home
+  --proxy <url>         Use an outbound HTTP/WS proxy for npm and Python runtime traffic
   --quest-id <id>       Open the TUI on one quest directly
 
 Update:
@@ -112,6 +113,35 @@ function expandUserPath(rawPath) {
   }
   if (normalized.startsWith(`~${path.sep}`) || normalized.startsWith('~/')) {
     return path.join(os.homedir(), normalized.slice(2));
+  }
+  return normalized;
+}
+
+function normalizeProxyUrl(rawValue) {
+  const value = String(rawValue || '').trim();
+  return value || null;
+}
+
+function applyLauncherProxy(proxyUrl) {
+  const normalized = normalizeProxyUrl(proxyUrl);
+  if (!normalized) {
+    return null;
+  }
+  for (const key of ['HTTP_PROXY', 'HTTPS_PROXY', 'ALL_PROXY', 'http_proxy', 'https_proxy', 'all_proxy']) {
+    process.env[key] = normalized;
+  }
+  for (const key of ['NO_PROXY', 'no_proxy']) {
+    const current = String(process.env[key] || '').trim();
+    const values = current
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean);
+    for (const host of ['127.0.0.1', 'localhost', '::1', '0.0.0.0']) {
+      if (!values.includes(host)) {
+        values.push(host);
+      }
+    }
+    process.env[key] = values.join(',');
   }
   return normalized;
 }
@@ -185,10 +215,7 @@ function detectInstallMode(rootPath = repoRoot) {
 }
 
 function updateManualCommand(installMode) {
-  if (installMode === 'npm-package') {
-    return `npm install -g ${UPDATE_PACKAGE_NAME}@latest`;
-  }
-  return 'git pull && bash install.sh';
+  return `npm install -g ${UPDATE_PACKAGE_NAME}@latest`;
 }
 
 function updateSupportSummary(installMode, npmBinary, launcherPath) {
@@ -203,14 +230,14 @@ function updateSupportSummary(installMode, npmBinary, launcherPath) {
     return {
       canCheck: true,
       canSelfUpdate: false,
-      reason: 'This DeepScientist installation comes from a source checkout and should be updated from Git.',
+      reason: 'Self-update is disabled for this installation. Use the npm command below to install the latest release build.',
     };
   }
   if (!launcherPath || !fs.existsSync(launcherPath)) {
     return {
       canCheck: true,
       canSelfUpdate: false,
-      reason: 'The launcher entrypoint could not be resolved.',
+      reason: 'Self-update is disabled because the launcher entrypoint could not be resolved. Use the npm command below instead.',
     };
   }
   return {
@@ -288,14 +315,17 @@ function buildUpdateStatus(home, statePatch = {}) {
   const support = updateSupportSummary(installMode, npmBinary, launcherPath);
   const currentVersion = normalizeVersion(state.current_version || packageJson.version);
   const latestVersion = normalizeVersion(state.latest_version || '');
+  const promptedVersion = normalizeVersion(state.last_prompted_version || '');
   const updateAvailable = Boolean(latestVersion) && compareVersions(latestVersion, currentVersion) > 0;
   const skippedVersion = normalizeVersion(state.last_skipped_version || '');
+  const promptedCurrentTarget = Boolean(updateAvailable && promptedVersion && promptedVersion === latestVersion);
   const skippedCurrentTarget = Boolean(updateAvailable && skippedVersion && skippedVersion === latestVersion);
   const promptRecommended =
     Boolean(updateAvailable)
     && !Boolean(state.busy)
+    && !promptedCurrentTarget
     && !skippedCurrentTarget
-    && isExpired(state.last_prompted_at || state.last_deferred_at, UPDATE_PROMPT_TTL_MS);
+    ;
 
   return {
     ok: true,
@@ -311,6 +341,7 @@ function buildUpdateStatus(home, statePatch = {}) {
     last_checked_at: state.last_checked_at || null,
     last_check_error: state.last_check_error || null,
     last_prompted_at: state.last_prompted_at || null,
+    last_prompted_version: promptedVersion || null,
     last_deferred_at: state.last_deferred_at || null,
     last_skipped_version: skippedVersion || null,
     last_update_started_at: state.last_update_started_at || null,
@@ -354,10 +385,12 @@ function checkForUpdates(home, { force = false, timeoutMs = 3500 } = {}) {
 }
 
 function markUpdateDeferred(home, version) {
+  const normalizedVersion = normalizeVersion(version || readUpdateState(home).latest_version || '');
   const patched = mergeUpdateState(home, {
     last_prompted_at: new Date().toISOString(),
     last_deferred_at: new Date().toISOString(),
-    latest_version: normalizeVersion(version || readUpdateState(home).latest_version || '') || null,
+    last_prompted_version: normalizedVersion || null,
+    latest_version: normalizedVersion || null,
   });
   return buildUpdateStatus(home, patched);
 }
@@ -366,6 +399,7 @@ function markUpdateSkipped(home, version) {
   const normalized = normalizeVersion(version);
   const patched = mergeUpdateState(home, {
     last_prompted_at: new Date().toISOString(),
+    last_prompted_version: normalized || null,
     last_skipped_version: normalized || null,
   });
   return buildUpdateStatus(home, patched);
@@ -839,6 +873,7 @@ function parseLauncherArgs(argv) {
   let host = null;
   let port = null;
   let home = null;
+  let proxy = null;
   let stop = false;
   let restart = false;
   let openBrowser = null;
@@ -867,6 +902,7 @@ function parseLauncherArgs(argv) {
     else if (arg === '--host' && args[index + 1]) host = args[++index];
     else if (arg === '--port' && args[index + 1]) port = Number(args[++index]);
     else if (arg === '--home' && args[index + 1]) home = path.resolve(args[++index]);
+    else if (arg === '--proxy' && args[index + 1]) proxy = args[++index];
     else if (arg === '--quest-id' && args[index + 1]) questId = args[++index];
     else if (arg === '--mode' && args[index + 1]) mode = normalizeMode(args[++index]);
     else if (arg === '--help' || arg === '-h') return { help: true };
@@ -879,6 +915,7 @@ function parseLauncherArgs(argv) {
     host,
     port,
     home,
+    proxy,
     stop,
     restart,
     status,
@@ -941,6 +978,7 @@ function parseUpdateArgs(argv) {
   let home = null;
   let host = null;
   let port = null;
+  let proxy = null;
   let restartDaemon = null;
   let skipUpdateCheck = false;
 
@@ -959,6 +997,7 @@ function parseUpdateArgs(argv) {
     else if (arg === '--home' && args[index + 1]) home = path.resolve(args[++index]);
     else if (arg === '--host' && args[index + 1]) host = args[++index];
     else if (arg === '--port' && args[index + 1]) port = Number(args[++index]);
+    else if (arg === '--proxy' && args[index + 1]) proxy = args[++index];
     else if (arg === '--help' || arg === '-h') return { help: true };
     else if (!arg.startsWith('--')) return null;
   }
@@ -976,6 +1015,7 @@ function parseUpdateArgs(argv) {
     home,
     host,
     port,
+    proxy,
     restartDaemon,
     skipUpdateCheck,
   };
@@ -2492,96 +2532,11 @@ function runNpmInstallLatest(home, npmBinary) {
   };
 }
 
-async function promptUpdateAction(status) {
-  const options = [
-    {
-      value: 'update',
-      label: status.can_self_update ? 'Update now' : 'Show manual update',
-    },
-    { value: 'later', label: 'Remind me later' },
-    { value: 'skip', label: 'Skip this version' },
-  ];
-  if (!process.stdin.isTTY || !process.stdout.isTTY) {
-    return 'later';
-  }
-  return new Promise((resolve) => {
-    let selected = 1;
-    const lines = [
-      '',
-      'A new DeepScientist version is available.',
-      '',
-      `Current: ${status.current_version}`,
-      `Latest:  ${status.latest_version || 'unknown'}`,
-      '',
-      status.can_self_update
-        ? 'What do you want to do?'
-        : 'Self-update is not available for this installation. Choose an action:',
-    ];
-
-    const cleanup = () => {
-      process.stdin.off('keypress', onKeypress);
-      if (process.stdin.isTTY) {
-        process.stdin.setRawMode(false);
-      }
-      process.stdin.pause();
-      console.log('');
-    };
-
-    const render = () => {
-      console.clear();
-      for (const line of lines) {
-        console.log(line);
-      }
-      for (let index = 0; index < options.length; index += 1) {
-        const option = options[index];
-        console.log(`${index === selected ? '>' : ' '} ${option.label}`);
-      }
-      console.log('');
-      console.log('Use ↑/↓ and Enter.');
-    };
-
-    const onKeypress = (_str, key) => {
-      if (key?.name === 'up') {
-        selected = (selected - 1 + options.length) % options.length;
-        render();
-        return;
-      }
-      if (key?.name === 'down') {
-        selected = (selected + 1) % options.length;
-        render();
-        return;
-      }
-      if (key?.name === 'return') {
-        const choice = options[selected].value;
-        cleanup();
-        resolve(choice);
-        return;
-      }
-      if (key?.ctrl && key?.name === 'c') {
-        cleanup();
-        resolve('later');
-      }
-    };
-
-    readline.emitKeypressEvents(process.stdin);
-    process.stdin.setRawMode(true);
-    process.stdin.resume();
-    process.stdin.on('keypress', onKeypress);
-    render();
-  });
-}
-
 function printUpdateStatus(status, { compact = false } = {}) {
   if (compact) {
     if (status.update_available) {
-      console.log(
-        `DeepScientist update available: ${status.current_version} -> ${status.latest_version}`
-      );
-      if (status.can_self_update) {
-        console.log('Run `ds update --yes` to install it.');
-      } else {
-        console.log(`Manual update: ${status.manual_update_command}`);
-      }
+      console.log(`DeepScientist update available: ${status.current_version} -> ${status.latest_version}`);
+      console.log(`Update with: ${status.manual_update_command}`);
       return;
     }
     console.log(`DeepScientist is up to date (${status.current_version}).`);
@@ -2594,16 +2549,15 @@ function printUpdateStatus(status, { compact = false } = {}) {
     ['Latest', status.latest_version || 'unknown'],
     ['Available', status.update_available ? 'yes' : 'no'],
     ['Install mode', status.install_mode],
-    ['Self-update', status.can_self_update ? 'supported' : 'manual-only'],
     ['Last checked', status.last_checked_at || 'never'],
   ]);
   if (status.last_check_error) {
     console.log('');
     console.log(`Version check error: ${status.last_check_error}`);
   }
-  if (!status.can_self_update) {
+  if (status.update_available || status.manual_update_command) {
     console.log('');
-    console.log(`Manual update command: ${status.manual_update_command}`);
+    console.log(`Update command: ${status.manual_update_command}`);
     if (status.reason) {
       console.log(status.reason);
     }
@@ -2629,26 +2583,6 @@ function spawnDetachedNode(args, options = {}) {
   });
   child.unref();
   return child;
-}
-
-async function restartIntoUpdatedLauncher(rawArgs) {
-  const launcherPath = resolveLauncherPath();
-  if (!launcherPath) {
-    throw new Error('Could not resolve the DeepScientist launcher after the update.');
-  }
-  const args = [launcherPath, '--skip-update-check', ...rawArgs.filter((item) => item !== '--skip-update-check')];
-  const child = spawn(process.execPath, args, {
-    cwd: repoRoot,
-    stdio: 'inherit',
-    env: process.env,
-  });
-  await new Promise((resolve, reject) => {
-    child.on('error', reject);
-    child.on('exit', (code) => {
-      process.exit(code ?? 0);
-      resolve();
-    });
-  });
 }
 
 async function performSelfUpdate(home, options = {}) {
@@ -2816,42 +2750,8 @@ async function maybeHandleStartupUpdate(home, rawArgs, options = {}) {
     return false;
   }
 
-  if (!process.stdin.isTTY || !process.stdout.isTTY) {
-    printUpdateStatus(status, { compact: true });
-    mergeUpdateState(home, {
-      last_prompted_at: new Date().toISOString(),
-    });
-    return false;
-  }
-
-  const action = await promptUpdateAction(status);
-  if (action === 'later') {
-    markUpdateDeferred(home, status.latest_version);
-    return false;
-  }
-  if (action === 'skip') {
-    markUpdateSkipped(home, status.latest_version);
-    return false;
-  }
-  if (action === 'update' && !status.can_self_update) {
-    console.log(`Manual update required: ${status.manual_update_command}`);
-    if (status.reason) {
-      console.log(status.reason);
-    }
-    markUpdateDeferred(home, status.latest_version);
-    return false;
-  }
-  if (action === 'update') {
-    console.log(`Updating DeepScientist ${status.current_version} -> ${status.latest_version} ...`);
-    const result = await performSelfUpdate(home, { restartDaemon: false });
-    if (!result.ok) {
-      console.error(result.message);
-      return false;
-    }
-    console.log(result.message);
-    await restartIntoUpdatedLauncher(rawArgs);
-    return true;
-  }
+  printUpdateStatus(status, { compact: true });
+  markUpdateDeferred(home, status.latest_version);
   return false;
 }
 
@@ -2956,7 +2856,7 @@ function readConfiguredUiAddressFromFile(home, fallbackHost, fallbackPort) {
   }
 }
 
-async function startDaemon(home, runtimePython, host, port) {
+async function startDaemon(home, runtimePython, host, port, proxy = null) {
   const browserUrl = browserUiUrl(host, port);
   const daemonBindUrl = bindUiUrl(host, port);
   const state = readDaemonState(home);
@@ -2997,7 +2897,18 @@ async function startDaemon(home, runtimePython, host, port) {
   const daemonId = crypto.randomUUID();
   const child = spawn(
     runtimePython,
-    ['-m', 'deepscientist.cli', '--home', home, 'daemon', '--host', host, '--port', String(port)],
+    [
+      '-m',
+      'deepscientist.cli',
+      '--home',
+      home,
+      ...(normalizeProxyUrl(proxy) ? ['--proxy', normalizeProxyUrl(proxy)] : []),
+      'daemon',
+      '--host',
+      host,
+      '--port',
+      String(port),
+    ],
     {
       cwd: repoRoot,
       detached: true,
@@ -3135,6 +3046,7 @@ async function updateMain(rawArgs) {
   }
 
   const home = options.home || resolveHome(rawArgs);
+  applyLauncherProxy(options.proxy);
   ensureDir(home);
 
   if (options.background && options.yes && !options.worker) {
@@ -3218,32 +3130,8 @@ async function updateMain(rawArgs) {
     printUpdateStatus(status, { compact: true });
     process.exit(0);
   }
-
-  const action = await promptUpdateAction(status);
-  if (action === 'later') {
-    markUpdateDeferred(home, status.latest_version);
-    console.log('Update reminder deferred.');
-    process.exit(0);
-  }
-  if (action === 'skip') {
-    markUpdateSkipped(home, status.latest_version);
-    console.log(`Skipped ${status.latest_version}.`);
-    process.exit(0);
-  }
-  if (!status.can_self_update) {
-    console.log(`Manual update command: ${status.manual_update_command}`);
-    if (status.reason) {
-      console.log(status.reason);
-    }
-    process.exit(0);
-  }
-  const payload = await performSelfUpdate(home, {
-    host: options.host,
-    port: options.port,
-    restartDaemon: options.restartDaemon,
-  });
-  console.log(payload.message);
-  process.exit(payload.ok ? 0 : 1);
+  printUpdateStatus(status, { compact: true });
+  process.exit(0);
 }
 
 async function migrateMain(rawArgs) {
@@ -3386,6 +3274,7 @@ async function launcherMain(rawArgs) {
   }
 
   const home = options.home || resolveHome(rawArgs);
+  applyLauncherProxy(options.proxy);
   ensureDir(home);
 
   if (options.stop) {
@@ -3442,7 +3331,7 @@ async function launcherMain(rawArgs) {
   step(4, 4, 'Starting local daemon and UI surfaces');
   let started;
   try {
-    started = await startDaemon(home, runtimePython, host, port);
+    started = await startDaemon(home, runtimePython, host, port, options.proxy);
   } catch (error) {
     if (handleCodexPreflightFailure(error)) return true;
     throw error;
@@ -3527,10 +3416,13 @@ module.exports = {
     legacyVenvRootPath,
     resolveUvBinary,
     resolveHome,
+    parseLauncherArgs,
+    normalizeProxyUrl,
     parseMigrateArgs,
     useEditableProjectInstall,
     compareVersions,
     detectInstallMode,
+    updateManualCommand,
     buildUpdateStatus,
   },
 };

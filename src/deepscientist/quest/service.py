@@ -74,7 +74,7 @@ class QuestService:
                     if value:
                         return value.lower()
         config = ConfigManager(self.home).load_named("config")
-        return str(config.get("default_locale") or "zh-CN").lower()
+        return str(config.get("default_locale") or "en-US").lower()
 
     def localized_copy(self, *, zh: str, en: str, quest_root: Path | None = None) -> str:
         return zh if self.preferred_locale(quest_root).startswith("zh") else en

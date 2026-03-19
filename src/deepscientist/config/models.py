@@ -56,6 +56,10 @@ def default_config(home: Path) -> dict:
             "codex_ready": False,
             "codex_last_checked_at": None,
             "codex_last_result": {},
+            "locale_source": "default",
+            "locale_initialized_from_browser": False,
+            "locale_initialized_at": None,
+            "locale_initialized_browser_locale": None,
         },
         "connectors": {
             "auto_ack": True,

@@ -36,6 +36,8 @@ It should produce executable hypotheses tied to:
 
 This stage is not just "brainstorming".
 It is the research-direction selection stage.
+It still needs a bounded creative-divergence phase before convergence.
+Do not collapse onto the first plausible route just because it sounds implementable.
 It should normally create a new candidate direction branch and node; it does not by itself decide the next optimization round.
 The output must survive three checks at once:
 
@@ -82,7 +84,7 @@ Use a compact search discipline during ideation:
 
 - first identify the current strongest line from existing results, literature, and branch history
 - treat that line as the current `incumbent`
-- keep only a small `frontier`, usually 2 to 3 serious alternatives
+- keep only a small serious `frontier`, usually `2-3` serious alternatives and rarely more than `5` after one bounded widening pass
 - ensure the frontier is meaningfully differentiated rather than the same idea renamed
 - prefer selecting from existing evidence over expanding the candidate list indefinitely
 
@@ -129,6 +131,13 @@ Break ties primarily through careful reasoning over:
 - Do not default to brute-force engineering escalation when a cleaner first-principles direction is available.
 - Do not keep generating more ideas once a small, clearly ranked frontier already exists.
 - Do not treat superficial variation as a new idea if the expected mechanism and evidence burden are effectively unchanged.
+- Separate generation from evaluation during ideation: generate first, judge second.
+- Start each fresh ideation pass by classifying the current framing as `problem-first` or `solution-first`.
+- Unless strong durable evidence already narrows the route to one obvious serious option, run one bounded divergent pass that produces a small but meaningfully varied slate, usually `6-12` raw ideas before collapsing to a serious frontier that is usually `2-3` and at most `5`.
+- If all surviving candidates belong to the same mechanism family, widen once with at least two new ideation lenses before converging.
+- Keep structurally coherent rejected ideas in a parking-lot or rejected-candidate section so they can be recombined later if needed.
+- Every serious candidate must answer `why now?` or `what changed?`, not just `what is the mechanism?`
+- Every selected idea must survive a two-sentence pitch and strongest-objection check before promotion.
 - Do not promote a direction unless you can explain:
   - what limitation it targets
   - why prior methods do not already solve it
@@ -265,7 +274,7 @@ The idea stage should usually leave behind:
   - unresolved gaps or watchlist items
 - a related-work map
 - a novelty and research-value audit
-- `2-5` candidate ideas
+- `2-5` candidate ideas, with the final serious frontier usually narrowed to `2-3`
 - a selected idea or explicit rejection of the current line
 - a durable Markdown idea draft that is finalized before the accepted idea is submitted
 - one or more memory cards for reusable rationale
@@ -341,6 +350,200 @@ Turn them into a direction argument.
 
 For a more explicit end-to-end reasoning sequence, read `references/idea-thinking-flow.md`.
 
+## Creative-divergence protocol
+
+Use deliberate ideation lenses before convergence when the route is not already obvious from durable evidence.
+The point is not uncontrolled brainstorming.
+The point is to widen the search just enough to avoid premature convergence onto the first implementable idea.
+
+This divergence protocol does not replace the main workflow below.
+It sits inside the main workflow after minimum grounding already exists from memory reuse, initial literature sweep, baseline reconstruction, and limitation analysis.
+If strong durable evidence already narrows the route to one obvious serious option, you may abbreviate the full widening pass, but you must record why a broader divergence pass was unnecessary.
+
+First classify the current entry frame:
+
+- `problem-first`:
+  - start from a concrete failure, bottleneck, or unmet need
+  - confirm who suffers, how much it matters, and why the problem is still open
+- `solution-first`:
+  - start from a new capability, mechanism, or transfer idea
+  - confirm at least two genuine problems it could solve and why this is not just a hammer looking for a nail
+
+Then choose at least `2-4` ideation lenses that are actually relevant to the current bottleneck.
+Good default lenses include:
+
+- abstraction ladder:
+  - move up to a broader principle
+  - move down to an extreme constrained case
+  - move sideways to an adjacent task with the same structure
+- tension or contradiction hunting:
+  - identify tradeoffs such as performance vs efficiency, safety vs capability, or generality vs specialization
+- `why now` / `what changed`:
+  - ask whether new compute, tooling, open models, benchmarks, failures, or regulations make an old direction newly viable
+- analogy transfer:
+  - borrow a structural mechanism from a nearby or distant field only when the mapping is causal, not metaphorical
+- constraint manipulation:
+  - list hard, soft, and hidden constraints, then relax, tighten, or replace the soft or hidden ones
+- negation or inversion:
+  - negate a widely assumed design rule and check whether the resulting system is coherent
+- composition / decomposition:
+  - combine two complementary components or separate a monolithic method into the real bottleneck pieces
+- adjacent possible:
+  - focus on directions that became feasible only because recent enablers now exist
+- stakeholder rotation:
+  - inspect the route from the end-user, developer, theorist, operator, regulator, or adversary perspective
+- simplicity test:
+  - ask whether the key contribution survives a simpler and cleaner mechanism
+
+During this divergent phase:
+
+- generate a compact but varied raw slate, usually `6-12` ideas
+- do not score them too early
+- force the slate to contain some diversity, usually:
+  - one conservative route
+  - one higher-upside route
+  - one elegance-first or low-complexity route
+- keep a parking-lot list for coherent rejects and odd-but-possible ideas
+
+For each raw idea, capture at least:
+
+- one-sentence hypothesis
+- target limitation
+- `why now` / `what changed`
+- likely closest prior overlap or novelty risk
+- whether it is conservative, higher-upside, or elegance-first
+
+Only after this bounded widening step should you collapse into the shortlist that will be scored seriously.
+
+## Framework selection guide
+
+Do not use every ideation lens on every quest.
+Pick the smallest set that breaks the current local optimum.
+
+Recommended defaults:
+
+- if the area is important but the concrete route is still vague:
+  - start with tension hunting plus `why now` / `what changed`
+- if you have a vague bottleneck but only incremental ideas:
+  - start with abstraction ladder plus failure or boundary probing
+- if you have a cool mechanism but no strong reason to care:
+  - start with the `problem-first` check plus stakeholder rotation
+- if every candidate feels like a small benchmark tweak:
+  - start with constraint manipulation plus negation or inversion
+- if every candidate is a near-clone of the incumbent:
+  - start with analogy transfer plus adjacent possible
+- if you are stuck between two paradigms that seem opposed:
+  - start with contradiction hunting and look for synthesis instead of compromise
+- if the route looks elegant but suspiciously complex:
+  - start with the simplicity test and force the minimum viable mechanism
+- if timing is the main uncertainty:
+  - start with the `why now` audit and adjacent-possible check
+
+The goal is not to sound creative.
+The goal is to produce candidate mechanisms that are genuinely different in logic, evidence burden, or timing rationale.
+
+## Integrated ideation workflow
+
+Use this end-to-end pattern when the route is not already forced by durable evidence.
+Treat it as a subroutine inside the main workflow, not as a replacement for the main workflow order.
+
+### Phase A. Diverge
+
+Goal:
+
+- create a compact but meaningfully varied slate before judging winners
+
+Precondition:
+
+- minimum grounding already exists from quest memory, an initial literature sweep, baseline reconstruction, and a current limitations map
+
+Recommended sequence:
+
+1. classify the current entry as `problem-first` or `solution-first`
+2. list the top bottlenecks, tensions, and what changed recently
+3. probe one or two failure boundaries of the incumbent
+4. apply `2-4` ideation lenses
+5. generate `6-12` raw ideas and keep a parking-lot list for coherent rejects
+
+During divergence:
+
+- do not rank too early
+- do not kill an idea only because it is unusual
+- do kill ideas that are incoherent, outside scope, or impossible in the current repo
+
+### Phase B. Converge
+
+Goal:
+
+- reduce the raw slate to a serious frontier that is usually `2-3` candidates and at most `5`
+
+Apply these filters:
+
+- explain-it test:
+  - can the idea be stated clearly in two sentences?
+- problem-value test:
+  - does the problem matter to a real reader, user, or evaluator?
+- `why now` test:
+  - is there a concrete reason this route is timely now rather than three years ago?
+- simplicity test:
+  - is the mechanism doing real work, or is it ornamental complexity?
+- feasibility test:
+  - can the current repo and resource budget test this honestly?
+- novelty or value test:
+  - even if not novel, is the line still worth doing for transfer, negative-result, or infrastructure value?
+
+If the shortlist is still homogeneous after convergence, return to Phase A with different lenses once.
+
+### Phase C. Refine
+
+Goal:
+
+- turn the winning candidate into a stable handoff contract for `experiment`
+
+Before promotion, force the winner to answer:
+
+- what exact limitation it targets
+- why current methods still fail here
+- what changed or why this is timely now
+- what the smallest credible implementation is
+- what the cheapest falsification path is
+- what the strongest likely objection is
+- what the two-sentence pitch is
+
+Only then move into the normal selection gate and `artifact.submit_idea(...)` flow.
+
+## Common ideation failure modes and recovery moves
+
+Watch for these predictable failures:
+
+- premature convergence:
+  - symptom: the first plausible route becomes the winner before a real alternative set exists
+  - recovery: reopen divergence with at least two different lenses
+- novelty without value:
+  - symptom: "nobody has tried this" is doing all the work
+  - recovery: run the problem-value test and stakeholder rotation
+- value without differentiation:
+  - symptom: the route matters, but close prior work already did most of it
+  - recovery: tighten the related-work map or route back to `scout`
+- complexity worship:
+  - symptom: the candidate has many moving parts but weak causal justification
+  - recovery: run the simplicity test and reduce to the smallest mechanism that could still work
+- analogy by metaphor:
+  - symptom: a cross-domain import sounds clever but the mechanism does not really map
+  - recovery: rewrite the analogy in causal language and reject it if the structure does not survive
+- stale assumptions:
+  - symptom: the team dismisses a route only because it failed under old constraints
+  - recovery: run the `what changed` audit explicitly
+- false binary:
+  - symptom: discussion gets stuck on choosing A or B
+  - recovery: ask whether the conflict is fundamental or an artifact of current formulations
+- adjacent-but-impossible:
+  - symptom: the route is interesting but needs assets or capabilities the current system does not have
+  - recovery: redesign around current constraints or reject honestly instead of hand-waving feasibility
+
+Use these recovery moves early.
+Do not wait until the selection gate to discover the whole ideation pass was trapped in the wrong mode.
+
 ## Workflow
 
 ### 1. Lock the success target and contribution frame
@@ -370,6 +573,7 @@ Before deep searching, write a compact plan for:
 - which literature buckets you will search
 - which evidence would validate or refute your current hypothesis
 - which prior ideas, findings, or failed attempts must not be duplicated blindly
+- whether the current framing is `problem-first` or `solution-first`, and why that framing is justified
 - a short first-principles memo explaining what you currently believe before you let the literature reshape that belief
 
 The plan does not need to be long.
@@ -547,9 +751,34 @@ Also decompose the broader research problem into `3-5` sub-problems when useful,
 
 This step is important because it prevents superficial "just add module X" ideation.
 
+### 5.1 Run a bounded creative-divergence pass
+
+Before ranking or narrowing, deliberately widen once unless strong durable evidence already makes one serious route obviously dominant.
+If you skip the full widening pass, record why.
+
+- produce `6-12` raw ideas unless the search space is genuinely tiny
+- use at least `3` distinct ideation lenses unless the route is already forced by evidence
+- include at least one failure-centric lens and one mechanism-centric lens
+- if the first slate is all from one mechanism family, widen again with at least `2` different lenses
+
+At this stage, clarity matters more than polish.
+Each raw idea should at least answer:
+
+- what limitation it targets
+- what the mechanism is
+- `why now` / `what changed`
+- what the likely closest overlap is
+- what kind of route it is:
+  - conservative
+  - higher-upside
+  - elegance-first
+
+Do not confuse this widening pass with final selection.
+Its purpose is to ensure the later shortlist contains genuinely different options rather than renamed variants.
+
 ### 6. Generate direction options first, then candidate ideas
 
-First derive exactly five actionable research directions whenever the space is not already tiny.
+After the bounded divergent pass, or after explicitly recording why it was unnecessary, derive exactly five actionable research directions whenever the space is not already tiny.
 Rank them from higher to lower expected return on investment.
 
 For each direction, specify:
@@ -649,6 +878,7 @@ Score each candidate along explicit axes:
 - relevance to the limitation
 - feasibility in the current codebase
 - expected upside
+- clarity of the two-sentence pitch
 - falsifiability
 - implementation cost
 - evaluation clarity
@@ -657,6 +887,7 @@ Score each candidate along explicit axes:
 - research value even if not fully novel
 - expected information gain
 - reusability as a platform capability
+- `why now` credibility
 
 Also keep a compact strategist-style score lens when useful:
 
@@ -683,6 +914,12 @@ At minimum, explicitly score:
 - feasibility
 - evidence quality
 - constraint fit
+
+Before promotion, also require:
+
+- a two-sentence pitch that a smart non-expert can follow
+- the strongest likely objection stated explicitly
+- a one-sentence `why now` statement explaining what changed or why this is timely now
 
 If the total is below `7/10`, do not promote the idea yet.
 Either refine once more or record a blocked / reject decision with the exact weakness.
@@ -726,10 +963,13 @@ Use the handoff template in `references/selection-gate.md`.
 At minimum, preserve:
 
 - a stable idea id
+- a two-sentence pitch
 - a falsifiable claim tied to metric and direction
+- a `why now` statement
 - the code-level plan and minimal experiment
 - the literature relation and evidence pointers
 - the strongest alternative hypothesis
+- the strongest likely objection
 
 ## Idea quality rules
 
@@ -905,6 +1145,8 @@ That draft should usually cover:
 
 - executive summary
 - bottleneck or limitation framing
+- whether the route is `problem-first` or `solution-first`
+- why now / what changed
 - closest prior work and overlap
 - any cross-domain inspirations worth borrowing
 - selected claim

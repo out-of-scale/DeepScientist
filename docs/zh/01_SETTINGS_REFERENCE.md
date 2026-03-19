@@ -44,7 +44,7 @@
 ```yaml
 home: ~/DeepScientist
 default_runner: codex
-default_locale: zh-CN
+default_locale: en-US # 或 zh-CN，首次打开 Web 时会按浏览器语言初始化
 daemon:
   session_restore_on_start: true
   max_concurrent_quests: 1
@@ -67,6 +67,14 @@ skills:
   sync_global_on_init: true
   sync_quest_on_create: true
   sync_quest_on_open: true
+bootstrap:
+  codex_ready: false
+  codex_last_checked_at: null
+  codex_last_result: {}
+  locale_source: browser
+  locale_initialized_from_browser: true
+  locale_initialized_at: 2026-03-18T00:00:00+00:00
+  locale_initialized_browser_locale: en-US
 connectors:
   auto_ack: true
   milestone_push: true
@@ -109,11 +117,12 @@ acp:
 **`default_locale`**
 
 - 类型：`string`
-- 默认值：`zh-CN`
+- 默认值：首次打开 Web 时按浏览器语言初始化，随后会落盘为 `zh-CN` 或 `en-US`
 - 允许值：`zh-CN`、`en-US`
 - 页面标签：`Default locale`
-- 作用：影响系统 prompt 的默认语言倾向以及部分 UI 默认文案。
-- 何时修改：希望整个系统默认说中文还是英文时修改。
+- 作用：影响系统 prompt 与运行时文案默认使用的语言。
+- 何时修改：希望整个系统固定偏向中文或英文时修改。
+- 注意事项：第一次浏览器初始化完成后，如果你在 `Settings` 手动修改这里，DeepScientist 会把它视为用户显式选择，后续不再自动跟随浏览器覆盖。
 
 ### Daemon policy
 
@@ -1107,7 +1116,7 @@ servers:
 ```yaml
 # config.yaml
 default_runner: codex
-default_locale: zh-CN
+default_locale: en-US
 ui:
   host: 0.0.0.0
   port: 20999

@@ -32,6 +32,10 @@ def test_init_creates_required_files(temp_home: Path) -> None:
     assert config["ui"]["auto_open_browser"] is True
     assert config["bootstrap"]["codex_ready"] is False
     assert config["bootstrap"]["codex_last_checked_at"] is None
+    assert config["bootstrap"]["locale_source"] == "default"
+    assert config["bootstrap"]["locale_initialized_from_browser"] is False
+    assert config["bootstrap"]["locale_initialized_at"] is None
+    assert config["bootstrap"]["locale_initialized_browser_locale"] is None
     assert runners["codex"]["model"] == "gpt-5.4"
     assert runners["codex"]["model_reasoning_effort"] == "xhigh"
     assert runners["codex"]["retry_initial_backoff_sec"] == 10.0
@@ -124,6 +128,33 @@ def test_auto_generated_quest_ids_initialize_from_existing_numeric_quests(temp_h
     snapshot = service.create("after existing quests")
 
     assert snapshot["quest_id"] == "011"
+
+
+def test_skill_installer_can_resync_existing_quests_after_version_change(temp_home: Path) -> None:
+    ensure_home_layout(temp_home)
+    installer = SkillInstaller(repo_root(), temp_home)
+    service = QuestService(temp_home, skill_installer=installer)
+    snapshot = service.create("sync existing quest skills")
+    quest_root = Path(snapshot["quest_root"])
+    stale_file = quest_root / ".codex" / "skills" / "deepscientist-scout" / "obsolete.txt"
+    stale_file.write_text("stale", encoding="utf-8")
+
+    result = installer.ensure_release_sync(
+        installed_version="9.9.9",
+        sync_global_enabled=False,
+        sync_existing_quests_enabled=True,
+        force=True,
+    )
+
+    assert result["updated"] is True
+    assert result["existing_quests_synced"] is True
+    assert result["existing_quests"]["count"] == 1
+    assert not stale_file.exists()
+    assert (quest_root / ".codex" / "skills" / "deepscientist-scout" / "SKILL.md").exists()
+    state_path = temp_home / "runtime" / "skill-sync-state.json"
+    assert state_path.exists()
+    state = json.loads(state_path.read_text(encoding="utf-8"))
+    assert state["installed_version"] == "9.9.9"
 
 
 def test_explicit_custom_quest_id_still_works(temp_home: Path) -> None:

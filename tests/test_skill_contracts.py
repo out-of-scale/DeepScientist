@@ -102,6 +102,38 @@ def test_idea_skill_adds_problem_importance_and_first_principles_memo() -> None:
     assert "a short first-principles memo" in text
 
 
+def test_idea_skill_requires_bounded_divergence_and_why_now_checks() -> None:
+    text = _skill_text("idea")
+
+    assert "problem-first" in text
+    assert "solution-first" in text
+    assert "6-12" in text
+    assert "usually `2-3`" in text or "usually 2 to 3" in text
+    assert "strong durable evidence already narrows the route" in text
+    assert "two-sentence pitch" in text
+    assert "strongest-objection" in text or "strongest objection" in text
+    assert "why now" in text
+    assert "adjacent possible" in text
+    assert "constraint manipulation" in text
+    assert "negation or inversion" in text
+    assert "composition / decomposition" in text
+
+
+def test_idea_skill_documents_framework_selection_and_failure_recovery() -> None:
+    text = _skill_text("idea")
+
+    assert "Framework selection guide" in text
+    assert "Integrated ideation workflow" in text
+    assert "Treat it as a subroutine inside the main workflow" in text
+    assert "Phase A. Diverge" in text
+    assert "Phase B. Converge" in text
+    assert "Phase C. Refine" in text
+    assert "Common ideation failure modes and recovery moves" in text
+    assert "premature convergence" in text
+    assert "novelty without value" in text
+    assert "false binary" in text
+
+
 def test_finalize_and_decision_skills_require_bundle_and_outline_actions() -> None:
     finalize_text = _skill_text("finalize")
     decision_text = _skill_text("decision")

@@ -15,6 +15,7 @@ from typing import Any
 from urllib.parse import parse_qs, urlencode, urlparse
 from urllib.request import Request
 
+from .. import __version__
 from ..artifact import ArtifactService
 from ..bash_exec import BashExecService
 from ..bash_exec.runtime import TerminalClient
@@ -83,6 +84,12 @@ class DaemonApp:
         self.team_service = SingleTeamService(home)
         self.cloud_service = CloudLinkService(home)
         config = self.config_manager.load_named("config")
+        skill_config = config.get("skills") if isinstance(config.get("skills"), dict) else {}
+        self.skill_sync_summary = self.skill_installer.ensure_release_sync(
+            installed_version=__version__,
+            sync_global_enabled=bool(skill_config.get("sync_global_on_init", True)),
+            sync_existing_quests_enabled=bool(skill_config.get("sync_quest_on_open", True)),
+        )
         self.logger = JsonlLogger(home / "logs", level=config.get("logging", {}).get("level", "info"))
         self.reconciled_quests = self.quest_service.reconcile_runtime_state()
         for item in self.reconciled_quests:
@@ -642,7 +649,7 @@ class DaemonApp:
 
     def _preferred_locale(self) -> str:
         config = self.config_manager.load_named("config")
-        return str(config.get("default_locale") or "zh-CN").lower()
+        return str(config.get("default_locale") or "en-US").lower()
 
     def _polite_copy(self, *, zh: str, en: str) -> str:
         return zh if self._preferred_locale().startswith("zh") else en

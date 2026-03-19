@@ -477,9 +477,21 @@ export function SettingsPage({
     }
     setSaving(true)
     try {
+      const nextStructuredDraft =
+        selectedName === 'config'
+          ? {
+              ...structuredDraft,
+              bootstrap: {
+                ...(structuredDraft.bootstrap && typeof structuredDraft.bootstrap === 'object'
+                  ? (structuredDraft.bootstrap as Record<string, unknown>)
+                  : {}),
+                locale_source: 'user',
+              },
+            }
+          : structuredDraft
       const result = await client.saveConfig(
         selectedName,
-        { structured: structuredDraft, revision: document.revision }
+        { structured: nextStructuredDraft, revision: document.revision }
       )
       if (result.ok) {
         setSaveMessage(t.saved)

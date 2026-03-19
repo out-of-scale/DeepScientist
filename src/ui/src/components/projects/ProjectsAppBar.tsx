@@ -3,6 +3,7 @@ import { NavLink } from 'react-router-dom'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { SystemUpdateButton } from '@/components/system-update/SystemUpdateButton'
 import { assetUrl } from '@/lib/assets'
 import { useI18n } from '@/lib/i18n'
 import { useThemeStore } from '@/lib/stores/theme'
@@ -82,6 +83,8 @@ export function ProjectsAppBar({
               {t('navSettings')}
             </NavLink>
           </nav>
+
+          <SystemUpdateButton />
 
           <Button variant="secondary" size="sm" onClick={toggleLocale} className="rounded-full">
             <Languages className="h-4 w-4" />

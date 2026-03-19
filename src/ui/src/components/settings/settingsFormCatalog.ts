@@ -51,8 +51,8 @@ export const configSections: SettingsSection[] = [
         key: 'default_locale',
         label: 'Default locale',
         kind: 'select',
-        description: 'Primary language used by system prompts and UI defaults.',
-        whereToGet: 'Choose the main language you want the runtime to speak by default.',
+        description: 'Primary language used by system prompts and runtime defaults. On the first web launch, DeepScientist initializes this from your browser language.',
+        whereToGet: 'Leave it as initialized, or override it here if you want the runtime to always prefer a specific language.',
         options: [
           { label: '中文 (zh-CN)', value: 'zh-CN' },
           { label: 'English (en-US)', value: 'en-US' },

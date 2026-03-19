@@ -117,6 +117,39 @@ test('detectInstallMode distinguishes npm packages from source checkouts', () =>
   );
 });
 
+test('updateManualCommand always points users to the npm upgrade command', () => {
+  assert.equal(
+    __internal.updateManualCommand('npm-package'),
+    'npm install -g @researai/deepscientist@latest'
+  );
+  assert.equal(
+    __internal.updateManualCommand('source-checkout'),
+    'npm install -g @researai/deepscientist@latest'
+  );
+});
+
+test('buildUpdateStatus only auto-prompts once per target version', () => {
+  const status = __internal.buildUpdateStatus('/tmp/ds-update-state', {
+    current_version: '1.5.4',
+    latest_version: '1.5.5',
+    last_prompted_version: '1.5.5',
+    busy: false,
+  });
+
+  assert.equal(status.update_available, true);
+  assert.equal(status.prompt_recommended, false);
+
+  const nextStatus = __internal.buildUpdateStatus('/tmp/ds-update-state', {
+    current_version: '1.5.4',
+    latest_version: '1.5.6',
+    last_prompted_version: '1.5.5',
+    busy: false,
+  });
+
+  assert.equal(nextStatus.update_available, true);
+  assert.equal(nextStatus.prompt_recommended, true);
+});
+
 test('resolveUvBinary prefers the DeepScientist-local uv install over PATH', () => {
   const home = fs.mkdtempSync(path.join(os.tmpdir(), 'ds-uv-home-'));
   const localUv = __internal.runtimeUvBinaryPath(home);
@@ -166,4 +199,17 @@ test('resolveHome uses the current working directory when --here is present', ()
     process.chdir(originalCwd);
     fs.rmSync(tempDir, { recursive: true, force: true });
   }
+});
+
+test('parseLauncherArgs accepts --proxy without treating its URL as a positional command', () => {
+  const parsed = __internal.parseLauncherArgs([
+    '--port',
+    '8890',
+    '--here',
+    '--proxy',
+    'http://127.0.0.1:58887',
+  ]);
+
+  assert.equal(parsed.port, 8890);
+  assert.equal(parsed.proxy, 'http://127.0.0.1:58887');
 });
